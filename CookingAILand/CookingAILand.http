@@ -1,0 +1,6 @@
+@CookingAILand_HostAddress = http://localhost:5251
+
+GET {{CookingAILand_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
