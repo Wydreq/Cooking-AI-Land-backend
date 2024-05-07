@@ -1,6 +1,8 @@
 using CookingAILand.Core.Models;
+using CookingAILand.Exceptions;
 using CookingAILand.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 
 namespace CookingAILand.Controllers;
@@ -28,5 +30,14 @@ public class AccountController : ControllerBase
     {
         var token = _accountService.GenerateJwt(dto);
         return Ok(token);
+    }
+    
+    [HttpPost("resetPassword")]
+    public ActionResult ResetPassword([FromBody] ForgotPasswordDto dto)
+    {
+        if (!ModelState.IsValid)
+            throw new BadRequestException("Insert correct email address");
+        _accountService.ResetPassword(dto);
+        return Ok();
     }
 }

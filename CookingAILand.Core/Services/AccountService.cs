@@ -10,6 +10,7 @@ using CookingAILand.Core.DAL.Persistence;
 using CookingAILand.Core.DAL.Repositories;
 using CookingAILand.Core.Entities;
 using CookingAILand.Core.Models;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.IdentityModel.Tokens;
 
 namespace CookingAILand;
@@ -18,21 +19,25 @@ public interface IAccountService
 {
     void RegisterUser(RegisterUserDto dto);
     string GenerateJwt(LoginDto dto);
+
+    void ResetPassword(ForgotPasswordDto dto);
 }
 
 public class AccountService : IAccountService
 {
     private readonly IPasswordHasher<User?> _passwordHasher;
     private readonly CookingDbContext _context;
+    private readonly IEmailSender _emailSender;
     private readonly AuthenticationSettings _authenticationSettings;
     private readonly IUserRepository _userRepository;
 
-    public AccountService(IPasswordHasher<User?> passwordHasher, AuthenticationSettings authenticationSettings, IUserRepository userRepository, CookingDbContext context)
+    public AccountService(IPasswordHasher<User?> passwordHasher, AuthenticationSettings authenticationSettings, IUserRepository userRepository, CookingDbContext context, IEmailSender emailSender)
     {
         _passwordHasher = passwordHasher;
         _authenticationSettings = authenticationSettings;
         _userRepository = userRepository;
         _context = context;
+        _emailSender = emailSender;
     }
 
     public void RegisterUser(RegisterUserDto dto)
@@ -79,5 +84,15 @@ public class AccountService : IAccountService
             expires: expires, signingCredentials: cred);
         var tokenHandler = new JwtSecurityTokenHandler();
         return tokenHandler.WriteToken(token);
+    }
+
+    public async void ResetPassword(ForgotPasswordDto dto)
+    {
+        var user = await _userRepository.GetByEmailAsync(dto.Email);
+        if (user is not null)
+        {
+            
+        }
+        await _emailSender.SendEmailAsync(dto.Email, "test", "test");
     }
 }

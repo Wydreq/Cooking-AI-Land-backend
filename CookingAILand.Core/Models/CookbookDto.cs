@@ -1,6 +1,6 @@
 namespace CookingAILand.Core.Models;
 
-public class CreateCookbookDto
+public class CookbookDto
 {
     public string Name { get; set; }
     public string? Description { get; set; }

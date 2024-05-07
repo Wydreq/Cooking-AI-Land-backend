@@ -8,6 +8,7 @@ public class CookingMappingProfile : Profile
 {
     public CookingMappingProfile()
     {
-        CreateMap<CreateCookbookDto, Cookbook>();
+        CreateMap<CookbookDto, Cookbook>();
+        CreateMap<CreateRecipeDto, Recipe>();
     }
 }

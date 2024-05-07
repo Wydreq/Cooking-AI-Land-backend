@@ -10,8 +10,9 @@ namespace CookingAILand;
 
 public interface ICookbookService
 {
-    Guid Create(CreateCookbookDto dto);
+    Guid Create(CookbookDto dto);
     void Delete(Guid id);
+    void Update(Guid id, CookbookDto dto);
 }
 
 public class CookbookService : ICookbookService
@@ -28,10 +29,11 @@ public class CookbookService : ICookbookService
         _userContextService = userContextService;
         _authorizationService = authorizationService;
     }
-    public Guid Create(CreateCookbookDto dto)
+    
+    public Guid Create(CookbookDto dto)
     {
         var cookbook = _mapper.Map<Cookbook>(dto);
-        cookbook.CreatedById = (Guid)_userContextService.GetUserId;
+        cookbook.CreatedById = (Guid)_userContextService.GetUserId!;
         _dbContext.Cookbooks.Add(cookbook);
         _dbContext.SaveChanges();
         return cookbook.Id;
@@ -53,4 +55,25 @@ public class CookbookService : ICookbookService
         _dbContext.Cookbooks.Remove(cookbook);
         _dbContext.SaveChanges();
     }
+
+    public void Update(Guid id, CookbookDto dto)
+    {
+        var cookbook = _dbContext.Cookbooks.FirstOrDefault(r => r.Id == id);
+
+        if (cookbook is null)
+            throw new NotFoundException("Cookbook not found");
+
+        var authorizationResult = _authorizationService.AuthorizeAsync(_userContextService.User, cookbook,
+            new ResourceOperationRequirement(ResourceOperation.Delete)).Result;
+
+        if (!authorizationResult.Succeeded)
+            throw new ForbidException("Access denied");
+
+        cookbook.Name = dto.Name;
+        cookbook.Description = dto.Description;
+        cookbook.Published = dto.Published;
+
+        _dbContext.SaveChanges();
+    }
+
 }

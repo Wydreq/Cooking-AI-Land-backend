@@ -8,4 +8,6 @@ public class Ingridient
     public string Name { get; set; }
     public MeasurementUnit Unit { get; set; }
     public double Amount { get; set; }
+    public Guid recipeId { get; set; }
+    public virtual Recipe? Recipe { get; set; }
 }

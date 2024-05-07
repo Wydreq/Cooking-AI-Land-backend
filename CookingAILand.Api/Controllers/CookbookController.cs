@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using CookingAILand.Core.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +17,7 @@ public class CookbookController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult CreateCookbook([FromBody] CreateCookbookDto dto)
+    public ActionResult CreateCookbook([FromBody] CookbookDto dto)
     {
         var id = _cookbookService.Create(dto);
         return Created($"/api/cookbook/{id}", null);
@@ -29,6 +28,13 @@ public class CookbookController : ControllerBase
     {
         _cookbookService.Delete(id);
         return Ok(id);
+    }
+    
+    [HttpPut("{id}")]
+    public ActionResult Update([FromBody] CookbookDto dto, [FromRoute] Guid id)
+    {
+        _cookbookService.Update(id, dto);
+        return Ok();
     }
 
 }

@@ -28,4 +28,9 @@ public class UserRepository : IUserRepository
     {
         return await _dbContext.Users.FindAsync(email);
     }
+
+    public async Task GenerateForgotPasswordTokenAsync()
+    {
+        
+    }
 }
