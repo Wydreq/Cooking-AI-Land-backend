@@ -13,8 +13,8 @@ public class Recipe
     public int PrepTime { get; set; }
     public int CookTime { get; set; }
     public List<Ingridient> Ingridients { get; set; }
-    public int CookbookId { get; set; }
+    public Guid CookbookId { get; set; }
     public virtual Cookbook? Cookbook { get; set; }
-    public int? CreatedById { get; set; }
+    public Guid? CreatedById { get; set; }
     public virtual User CreatedBy { get; set; }
 }

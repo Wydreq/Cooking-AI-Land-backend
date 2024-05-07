@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CookingAILand.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f1e4a73420108799728814f390ec13e33916bf3a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6c3eb5a891dc3d0a678c2a8adb04d88ed5b228fb")]
 [assembly: System.Reflection.AssemblyProductAttribute("CookingAILand.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CookingAILand.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
