@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text;
+using AutoMapper;
 using CookingAILand.Core.DAL.Entities;
 using CookingAILand.Core.DAL.Persistence;
 using CookingAILand.Core.DAL.Repositories;
@@ -21,6 +22,8 @@ public interface IAccountService
     string GenerateJwt(LoginDto dto);
 
     void ResetPassword(ForgotPasswordDto dto);
+
+    GetUserDto GetMe();
 }
 
 public class AccountService : IAccountService
@@ -28,19 +31,25 @@ public class AccountService : IAccountService
     private readonly IPasswordHasher<User?> _passwordHasher;
     private readonly CookingDbContext _context;
     private readonly IEmailSender _emailSender;
+    private readonly IUserContextService _userContextService;
+    private readonly IMapper _mapper;
     private readonly AuthenticationSettings _authenticationSettings;
     private readonly IUserRepository _userRepository;
 
-    public AccountService(IPasswordHasher<User?> passwordHasher, AuthenticationSettings authenticationSettings, IUserRepository userRepository, CookingDbContext context, IEmailSender emailSender)
+    public AccountService(IPasswordHasher<User?> passwordHasher, AuthenticationSettings authenticationSettings,
+        IUserRepository userRepository, CookingDbContext context, IEmailSender emailSender,
+        IUserContextService userContextService, IMapper mapper)
     {
         _passwordHasher = passwordHasher;
         _authenticationSettings = authenticationSettings;
         _userRepository = userRepository;
         _context = context;
         _emailSender = emailSender;
+        _userContextService = userContextService;
+        _mapper = mapper;
     }
 
-    public void RegisterUser(RegisterUserDto dto)
+    public async void RegisterUser(RegisterUserDto dto)
     {
         var newUser = new User()
         {
@@ -52,7 +61,8 @@ public class AccountService : IAccountService
         };
 
         newUser.PasswordHash = _passwordHasher.HashPassword(newUser, dto.Password);
-        _userRepository.AddAsync(newUser);
+        _context.Users.Add(newUser);
+        _context.SaveChanges();
     }
 
     public string GenerateJwt(LoginDto dto)
@@ -75,7 +85,7 @@ public class AccountService : IAccountService
             new Claim(ClaimTypes.Name, $"{user.FirstName}{user.LastName}"),
             new Claim(ClaimTypes.Role, $"{user.Role}"),
         };
-        
+
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_authenticationSettings.JwtKey));
         var cred = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -88,11 +98,12 @@ public class AccountService : IAccountService
 
     public async void ResetPassword(ForgotPasswordDto dto)
     {
-        var user = await _userRepository.GetByEmailAsync(dto.Email);
-        if (user is not null)
-        {
-            
-        }
         await _emailSender.SendEmailAsync(dto.Email, "test", "test");
+    }
+
+    public GetUserDto GetMe()
+    {
+        var user = _context.Users.FirstOrDefault(u => u.Id == _userContextService.GetUserId);
+        return _mapper.Map<GetUserDto>(user);
     }
 }

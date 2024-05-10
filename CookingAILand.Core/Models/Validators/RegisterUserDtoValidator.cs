@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using CookingAILand.Core.DAL.Persistence;
 using CookingAILand.Core.Entities;
 using FluentValidation;
@@ -9,7 +10,11 @@ public class RegisterUserDtoValidator : AbstractValidator<RegisterUserDto>
     public RegisterUserDtoValidator(CookingDbContext dbContext)
     {
         RuleFor(x => x.Email).NotEmpty().EmailAddress();
-        RuleFor(x => x.Password).MinimumLength(6);
+        RuleFor(x => x.Password).NotEmpty().MinimumLength(6).Must(password =>
+        {
+            const string pattern = @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{6,}$";
+            return Regex.IsMatch(password, pattern);
+        }).WithMessage("Password must be strong.");
         RuleFor(x => x.ConfirmPassword).Equal(e => e.Password);
         RuleFor(x => x.Email).Custom((value, context) =>
         {
@@ -36,7 +41,7 @@ public class RegisterUserDtoValidator : AbstractValidator<RegisterUserDto>
             if (age < 13)
             {
                 context.AddFailure("DateOfBirth", "You must be at least 13 years old");
-            } 
+            }
         }).NotEmpty();
     }
 }

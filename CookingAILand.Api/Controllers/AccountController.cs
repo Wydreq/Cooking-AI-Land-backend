@@ -1,6 +1,7 @@
 using CookingAILand.Core.Models;
 using CookingAILand.Exceptions;
 using CookingAILand.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
@@ -12,12 +13,14 @@ namespace CookingAILand.Controllers;
 public class AccountController : ControllerBase
 {
     private readonly IAccountService _accountService;
+    private readonly AuthenticationSettings _authenticationSettings;
 
-    public AccountController(IAccountService accountService)
+    public AccountController(IAccountService accountService, AuthenticationSettings authenticationSettings)
     {
         _accountService = accountService;
+        _authenticationSettings = authenticationSettings;
     }
-    
+
     [HttpPost("register")]
     public ActionResult CreateUser([FromBody] RegisterUserDto dto)
     {
@@ -26,12 +29,18 @@ public class AccountController : ControllerBase
     }
 
     [HttpPost("login")]
-    public ActionResult Login([FromBody] LoginDto dto)
+    public ActionResult<TokenDto> Login([FromBody] LoginDto dto)
     {
         var token = _accountService.GenerateJwt(dto);
-        return Ok(token);
+        Response.Cookies.Append("X-Access-Token", token,
+            new CookieOptions()
+            {
+                HttpOnly = true, IsEssential = true, Secure = false, SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddDays(_authenticationSettings.JwtExpireDays)
+            });
+        return Ok(new TokenDto() { Token = token });
     }
-    
+
     [HttpPost("resetPassword")]
     public ActionResult ResetPassword([FromBody] ForgotPasswordDto dto)
     {
@@ -39,5 +48,13 @@ public class AccountController : ControllerBase
             throw new BadRequestException("Insert correct email address");
         _accountService.ResetPassword(dto);
         return Ok();
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    public ActionResult<GetUserDto> GetMe()
+    {
+        var user = _accountService.GetMe();
+        return Ok(user);
     }
 }

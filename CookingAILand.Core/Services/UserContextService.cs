@@ -22,4 +22,6 @@ public class UserContextService : IUserContextService
 
     public Guid? GetUserId =>
         User is null ? null : (Guid?)Guid.Parse(User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier).Value);
+    
+    
 }

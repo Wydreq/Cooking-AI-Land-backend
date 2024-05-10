@@ -16,6 +16,29 @@ public class CookbookController : ControllerBase
         _cookbookService = cookbookService;
     }
 
+    [HttpGet]
+    [AllowAnonymous]
+    public ActionResult<IEnumerable<CookbookDto>> GetAllPublishedCookbooks([FromQuery] CookingQuery query)
+    {
+        var cookbooksDtos = _cookbookService.GetAllPublishedCookbooks(query);
+        return Ok(cookbooksDtos);
+    }
+
+    [HttpGet("{id}")]
+    [AllowAnonymous]
+    public ActionResult<GetCookbookDto> GetCookbookById([FromRoute] Guid id)
+    {
+        var cookbookDto = _cookbookService.GetCookbookById(id);
+        return Ok(cookbookDto);
+    }
+    
+    [HttpGet("mine")]
+    public ActionResult<GetCookbookDto> GetAllUsersCookbooks([FromQuery] CookingQuery query)
+    {
+        var cookbookDtos = _cookbookService.GetAllUsersCookbooks(query);
+        return Ok(cookbookDtos);
+    }
+
     [HttpPost]
     public ActionResult CreateCookbook([FromBody] CookbookDto dto)
     {
@@ -36,5 +59,4 @@ public class CookbookController : ControllerBase
         _cookbookService.Update(id, dto);
         return Ok();
     }
-
 }

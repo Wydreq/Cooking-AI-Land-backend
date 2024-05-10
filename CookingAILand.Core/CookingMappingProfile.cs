@@ -10,5 +10,12 @@ public class CookingMappingProfile : Profile
     {
         CreateMap<CookbookDto, Cookbook>();
         CreateMap<CreateRecipeDto, Recipe>();
+        CreateMap<Cookbook, CookbookDto>();
+        CreateMap<Cookbook, GetCookbookDto>();
+        CreateMap<Recipe, CreateRecipeDto>();
+        CreateMap<GetRecipeDto, Recipe>();
+        CreateMap<Recipe, GetRecipeDto>();
+        CreateMap<GetUserDto, User>();
+        CreateMap<User, GetUserDto>();
     }
 }

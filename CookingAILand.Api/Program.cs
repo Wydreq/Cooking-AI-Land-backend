@@ -6,11 +6,13 @@ using CookingAILand.Core.DAL.Entities;
 using CookingAILand.Core.DAL.Persistence;
 using CookingAILand.Core.DAL.Repositories;
 using CookingAILand.Core.Entities;
+using CookingAILand.Core.Services;
 using CookingAILand.Middleware;
 using CookingAILand.Models;
 using CookingAILand.Models.Validators;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -43,6 +45,14 @@ builder.Services.AddAuthentication(option =>
         ValidAudience = authenticationSettings.JwtIssuer,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authenticationSettings.JwtKey))
     };
+    cfg.Events = new JwtBearerEvents()
+    {
+        OnMessageReceived = context =>
+        {
+            context.Token = context.Request.Cookies["X-Access-Token"];
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddScoped<CookingSeeder>();
@@ -65,7 +75,8 @@ builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendClient",
-        builder => builder.AllowAnyMethod().AllowAnyHeader().WithOrigins(configuration["AllowedOrigins"]));
+        builder => builder.AllowAnyMethod().AllowAnyHeader().WithOrigins(configuration["AllowedOrigins"])
+            .AllowCredentials());
 });
 
 var app = builder.Build();
@@ -84,5 +95,6 @@ app.UseSwagger();
 app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", "Cooking AI Land"); });
 app.UseAuthorization();
 app.MapControllers();
+app.UseCors("FrontendClient");
 app.UseMiddleware<ErrorHandlingMiddleware>();
 app.Run();

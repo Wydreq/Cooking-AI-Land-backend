@@ -1,10 +1,13 @@
+using System.Linq.Expressions;
 using AutoMapper;
 using CookingAILand.Core.Authorization;
 using CookingAILand.Core.DAL.Entities;
+using CookingAILand.Core.DAL.Enums;
 using CookingAILand.Core.DAL.Persistence;
 using CookingAILand.Core.Models;
 using CookingAILand.Exceptions;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 namespace CookingAILand;
 
@@ -13,6 +16,9 @@ public interface ICookbookService
     Guid Create(CookbookDto dto);
     void Delete(Guid id);
     void Update(Guid id, CookbookDto dto);
+    PagedResult<CookbookDto> GetAllPublishedCookbooks(CookingQuery query);
+    GetCookbookDto GetCookbookById(Guid id);
+    PagedResult<CookbookDto> GetAllUsersCookbooks(CookingQuery query);
 }
 
 public class CookbookService : ICookbookService
@@ -74,6 +80,88 @@ public class CookbookService : ICookbookService
         cookbook.Published = dto.Published;
 
         _dbContext.SaveChanges();
+    }
+
+    public PagedResult<CookbookDto> GetAllPublishedCookbooks(CookingQuery query)
+    {
+        var baseQuery = _dbContext
+            .Cookbooks
+            .Where(c => c.Published == true)
+            .Where(c => query.SearchPhrase == null || c.Name.ToLower()
+                .Contains(query.SearchPhrase.ToLower()) || c.Description.ToLower()
+                .Contains(query.SearchPhrase.ToLower()));
+        
+        if (!string.IsNullOrEmpty(query.SortBy))
+        {
+            var columnsSelectors = new Dictionary<string, Expression<Func<Cookbook, object>>>
+            {
+                {nameof(Cookbook.Name), c => c.Name},
+                {nameof(Cookbook.Description), c => c.Description},
+            };
+            var selectedColumn = columnsSelectors[query.SortBy];
+            baseQuery = query.SortDirection == SortDirection.ASC ? baseQuery.OrderBy(selectedColumn) : baseQuery.OrderByDescending(selectedColumn);
+        }
+        
+        var cookbooks = baseQuery.Skip(query.PageSize * (query.PageNumber - 1))
+            .Take(query.PageSize)
+            .ToList();
+        
+        var totalItemsCount = baseQuery.Count();
+            
+        var cookbooksDto = _mapper.Map<List<CookbookDto>>(cookbooks);
+
+        return new PagedResult<CookbookDto>(cookbooksDto, totalItemsCount, query.PageSize, query.PageNumber);
+    }
+
+    public GetCookbookDto GetCookbookById(Guid id)
+    {
+        var cookbook = _dbContext.Cookbooks.FirstOrDefault(r => r.Id == id);
+
+        if (cookbook is null)
+            throw new NotFoundException("Cookbook not found");
+
+        if (!cookbook.Published)
+        {
+            var authorizationResult = _authorizationService.AuthorizeAsync(_userContextService.User, cookbook,
+                new ResourceOperationRequirement(ResourceOperation.Delete)).Result;
+
+            if (!authorizationResult.Succeeded)
+                throw new ForbidException("Access denied");
+        }
+
+        return _mapper.Map<GetCookbookDto>(cookbook);
+
+    }
+    
+    public PagedResult<CookbookDto> GetAllUsersCookbooks(CookingQuery query)
+    {
+        var baseQuery = _dbContext
+            .Cookbooks
+            .Where(c => c.CreatedById == _userContextService.GetUserId)
+            .Where(c => query.SearchPhrase == null || c.Name.ToLower()
+                .Contains(query.SearchPhrase.ToLower()) || c.Description.ToLower()
+                .Contains(query.SearchPhrase.ToLower()));
+        
+        if (!string.IsNullOrEmpty(query.SortBy))
+        {
+            var columnsSelectors = new Dictionary<string, Expression<Func<Cookbook, object>>>
+            {
+                {nameof(Cookbook.Name), c => c.Name},
+                {nameof(Cookbook.Description), c => c.Description},
+            };
+            var selectedColumn = columnsSelectors[query.SortBy];
+            baseQuery = query.SortDirection == SortDirection.ASC ? baseQuery.OrderBy(selectedColumn) : baseQuery.OrderByDescending(selectedColumn);
+        }
+        
+        var cookbooks = baseQuery.Skip(query.PageSize * (query.PageNumber - 1))
+            .Take(query.PageSize)
+            .ToList();
+        
+        var totalItemsCount = baseQuery.Count();
+            
+        var cookbooksDto = _mapper.Map<List<CookbookDto>>(cookbooks);
+
+        return new PagedResult<CookbookDto>(cookbooksDto, totalItemsCount, query.PageSize, query.PageNumber);
     }
 
 }
