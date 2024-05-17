@@ -18,23 +18,23 @@ public class RecipeController : ControllerBase
     }
 
     [HttpPost("{cookbookId}")]
-    public ActionResult CreateRecipe([FromBody] CreateRecipeDto dto, [FromRoute] Guid cookbookId)
+    public async Task<ActionResult> CreateRecipe([FromForm] CreateRecipeDto dto, [FromRoute] Guid cookbookId)
     {
-        var id = _recipeService.Create(cookbookId, dto);
+        var id = await _recipeService.CreateAsync(cookbookId, dto);
         return Created($"/api/recipe/{id}", null);
     }
     
     [HttpDelete("{id}")]
-    public ActionResult DeleteRecipe([FromRoute] Guid id)
+    public async Task<ActionResult> DeleteRecipe([FromRoute] Guid id)
     {
-        _recipeService.Delete(id);
+        await _recipeService.DeleteAsync(id);
         return Ok(id);
     }
     
     [HttpPut("{id}")]
-    public ActionResult Update([FromBody] CreateRecipeDto dto, [FromRoute] Guid id)
+    public async Task<ActionResult> Update([FromForm] CreateRecipeDto dto, [FromRoute] Guid id)
     {
-        _recipeService.Update(id, dto);
+        await _recipeService.UpdateAsync(id, dto);
         return Ok();
     }
     
@@ -48,9 +48,9 @@ public class RecipeController : ControllerBase
 
     [HttpGet("{id}")]
     [AllowAnonymous]
-    public ActionResult<GetRecipeDto> GetRecipeById([FromRoute] Guid id)
+    public async Task<ActionResult<GetRecipeDto>> GetRecipeById([FromRoute] Guid id)
     {
-        var recipeDto = _recipeService.GetRecipeById(id);
+        var recipeDto = await _recipeService.GetRecipeByIdAsync(id);
         return Ok(recipeDto);
     }
 }

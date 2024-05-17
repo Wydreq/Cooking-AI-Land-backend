@@ -11,6 +11,8 @@ using CookingAILand.Core.DAL.Persistence;
 using CookingAILand.Core.DAL.Repositories;
 using CookingAILand.Core.Entities;
 using CookingAILand.Core.Models;
+using CookingAILand.Core.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.IdentityModel.Tokens;
 
@@ -18,12 +20,14 @@ namespace CookingAILand;
 
 public interface IAccountService
 {
-    void RegisterUser(RegisterUserDto dto);
-    string GenerateJwt(LoginDto dto);
+    Task RegisterUserAsync(RegisterUserDto dto);
+    Task<string> GenerateJwtAsync(LoginDto dto);
 
-    void ResetPassword(ForgotPasswordDto dto);
+    Task<string> UploadProfilePhoto(IFormFile file);
 
-    GetUserDto GetMe();
+    Task ResetPassword(ForgotPasswordDto dto);
+
+    Task<GetUserDto> GetMeAsync();
 }
 
 public class AccountService : IAccountService
@@ -33,12 +37,13 @@ public class AccountService : IAccountService
     private readonly IEmailSender _emailSender;
     private readonly IUserContextService _userContextService;
     private readonly IMapper _mapper;
+    private readonly IPhotoUploadService _photoUploadService;
     private readonly AuthenticationSettings _authenticationSettings;
     private readonly IUserRepository _userRepository;
 
     public AccountService(IPasswordHasher<User?> passwordHasher, AuthenticationSettings authenticationSettings,
         IUserRepository userRepository, CookingDbContext context, IEmailSender emailSender,
-        IUserContextService userContextService, IMapper mapper)
+        IUserContextService userContextService, IMapper mapper, IPhotoUploadService photoUploadService)
     {
         _passwordHasher = passwordHasher;
         _authenticationSettings = authenticationSettings;
@@ -47,9 +52,10 @@ public class AccountService : IAccountService
         _emailSender = emailSender;
         _userContextService = userContextService;
         _mapper = mapper;
+        _photoUploadService = photoUploadService;
     }
 
-    public async void RegisterUser(RegisterUserDto dto)
+    public async Task RegisterUserAsync(RegisterUserDto dto)
     {
         var newUser = new User()
         {
@@ -61,13 +67,27 @@ public class AccountService : IAccountService
         };
 
         newUser.PasswordHash = _passwordHasher.HashPassword(newUser, dto.Password);
-        _context.Users.Add(newUser);
-        _context.SaveChanges();
+        await _context.Users.AddAsync(newUser);
+        await _context.SaveChangesAsync();
     }
 
-    public string GenerateJwt(LoginDto dto)
+    public async Task<string> UploadProfilePhoto(IFormFile file)
     {
-        var user = _context.Users.FirstOrDefault(u => u.Email == dto.Email);
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == _userContextService.GetUserId);
+        if (user is null)
+        {
+            throw new BadRequestException("User not found");
+        }
+
+        var uploadResult = await _photoUploadService.upload(file);
+        user.PhotoUrl = uploadResult.Url;
+        await _context.SaveChangesAsync();
+        return uploadResult.Url;
+    }
+
+    public async  Task<string> GenerateJwtAsync(LoginDto dto)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
         if (user is null)
         {
             throw new BadRequestException("Invalid username or password");
@@ -96,14 +116,14 @@ public class AccountService : IAccountService
         return tokenHandler.WriteToken(token);
     }
 
-    public async void ResetPassword(ForgotPasswordDto dto)
+    public async Task ResetPassword(ForgotPasswordDto dto)
     {
         await _emailSender.SendEmailAsync(dto.Email, "test", "test");
     }
 
-    public GetUserDto GetMe()
+    public async Task<GetUserDto> GetMeAsync()
     {
-        var user = _context.Users.FirstOrDefault(u => u.Id == _userContextService.GetUserId);
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == _userContextService.GetUserId);
         return _mapper.Map<GetUserDto>(user);
     }
 }

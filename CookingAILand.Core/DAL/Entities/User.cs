@@ -9,9 +9,11 @@ public class User
     public string FirstName { get; set; }
     public string LastName { get; set; }
     public DateTime DateOfBirth { get; set; }
-    
+
     public DateTime Created { get; set; } = DateTime.Now;
     public string PasswordHash { get; set; }
+
+    public string? PhotoUrl { get; set; }
     public int RoleId { get; set; }
     public Role Role { get; set; }
 }

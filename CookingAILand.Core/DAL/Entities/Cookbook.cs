@@ -7,6 +7,7 @@ public class Cookbook
     public string? Description { get; set; }
     public bool Published { get; set; } = false;
     public List<Recipe>? Recipes { get; set; }
+    public string? PhotoUrl { get; set; }
     public Guid CreatedById { get; set; }
     public virtual User CreatedBy { get; set; }
 }

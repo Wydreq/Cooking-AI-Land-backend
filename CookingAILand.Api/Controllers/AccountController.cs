@@ -1,6 +1,8 @@
+using System.Runtime.InteropServices.JavaScript;
 using CookingAILand.Core.Models;
 using CookingAILand.Exceptions;
 using CookingAILand.Models;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,23 +24,43 @@ public class AccountController : ControllerBase
     }
 
     [HttpPost("register")]
-    public ActionResult CreateUser([FromBody] RegisterUserDto dto)
+    public async Task<ActionResult> CreateUser([FromBody] RegisterUserDto dto)
     {
-        _accountService.RegisterUser(dto);
+        await _accountService.RegisterUserAsync(dto);
         return Ok();
     }
 
     [HttpPost("login")]
-    public ActionResult<TokenDto> Login([FromBody] LoginDto dto)
+    public async Task<ActionResult<TokenDto>> Login([FromBody] LoginDto dto)
     {
-        var token = _accountService.GenerateJwt(dto);
+        var token = await _accountService.GenerateJwtAsync(dto);
         Response.Cookies.Append("X-Access-Token", token,
             new CookieOptions()
             {
                 HttpOnly = true, IsEssential = true, Secure = false, SameSite = SameSiteMode.Strict,
                 Expires = DateTime.UtcNow.AddDays(_authenticationSettings.JwtExpireDays)
             });
-        return Ok(new TokenDto() { Token = token });
+        return Ok(new TokenDto()
+        {
+            Token = token,
+            ExpirationDate = DateTime.Now.AddDays(_authenticationSettings.JwtExpireDays)
+                .ToString("yyyy-M-d HH:mm:ss")
+        });
+    }
+
+    [HttpPost("logout")]
+    public ActionResult Logout()
+    {
+        Response.Cookies.Delete("X-Access-Token");
+        return Ok();
+    }
+
+    [HttpPost("photoUpload")]
+    [Authorize]
+    public async Task<ActionResult<string>> UploadPhoto([FromForm] IFormFile file)
+    {
+        var photoUrl =  await _accountService.UploadProfilePhoto(file);
+        return Ok(photoUrl);
     }
 
     [HttpPost("resetPassword")]
@@ -52,9 +74,9 @@ public class AccountController : ControllerBase
 
     [HttpGet("me")]
     [Authorize]
-    public ActionResult<GetUserDto> GetMe()
+    public async Task<ActionResult<GetUserDto>> GetMe()
     {
-        var user = _accountService.GetMe();
+        var user = await _accountService.GetMeAsync();
         return Ok(user);
     }
 }

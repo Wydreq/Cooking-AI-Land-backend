@@ -18,7 +18,7 @@ public class CookbookController : ControllerBase
 
     [HttpGet]
     [AllowAnonymous]
-    public ActionResult<IEnumerable<CookbookDto>> GetAllPublishedCookbooks([FromQuery] CookingQuery query)
+    public ActionResult<IEnumerable<GetCookbookDto>> GetAllPublishedCookbooks([FromQuery] CookingQuery query)
     {
         var cookbooksDtos = _cookbookService.GetAllPublishedCookbooks(query);
         return Ok(cookbooksDtos);
@@ -26,9 +26,9 @@ public class CookbookController : ControllerBase
 
     [HttpGet("{id}")]
     [AllowAnonymous]
-    public ActionResult<GetCookbookDto> GetCookbookById([FromRoute] Guid id)
+    public async Task<ActionResult<GetCookbookDto>> GetCookbookById([FromRoute] Guid id)
     {
-        var cookbookDto = _cookbookService.GetCookbookById(id);
+        var cookbookDto = await _cookbookService.GetCookbookByIdAsync(id);
         return Ok(cookbookDto);
     }
     
@@ -40,23 +40,23 @@ public class CookbookController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult CreateCookbook([FromBody] CookbookDto dto)
+    public async Task<ActionResult> CreateCookbook([FromForm] CookbookDto dto)
     {
-        var id = _cookbookService.Create(dto);
+        var id =  await _cookbookService.CreateAsync(dto);
         return Created($"/api/cookbook/{id}", null);
     }
 
     [HttpDelete("{id}")]
-    public ActionResult DeleteCookbook([FromRoute] Guid id)
+    public async Task<ActionResult> DeleteCookbook([FromRoute] Guid id)
     {
-        _cookbookService.Delete(id);
+        await _cookbookService.DeleteAsync(id);
         return Ok(id);
     }
     
     [HttpPut("{id}")]
-    public ActionResult Update([FromBody] CookbookDto dto, [FromRoute] Guid id)
+    public async Task<ActionResult> Update([FromForm] CookbookDto dto, [FromRoute] Guid id)
     {
-        _cookbookService.Update(id, dto);
+        await _cookbookService.UpdateAsync(id, dto);
         return Ok();
     }
 }

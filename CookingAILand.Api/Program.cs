@@ -6,6 +6,7 @@ using CookingAILand.Core.DAL.Entities;
 using CookingAILand.Core.DAL.Persistence;
 using CookingAILand.Core.DAL.Repositories;
 using CookingAILand.Core.Entities;
+using CookingAILand.Core.Helpers;
 using CookingAILand.Core.Services;
 using CookingAILand.Middleware;
 using CookingAILand.Models;
@@ -70,6 +71,8 @@ builder.Services.AddControllers().AddFluentValidation();
 builder.Services.AddDbContext<CookingDbContext>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.Configure<CloudinarySettings>(configuration.GetSection("Cloudinary"));
+builder.Services.AddScoped<IPhotoUploadService, PhotoUploadService>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>

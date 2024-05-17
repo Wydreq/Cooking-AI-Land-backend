@@ -15,6 +15,8 @@ public class Recipe
     public List<Ingridient> Ingridients { get; set; }
     public Guid CookbookId { get; set; }
     public virtual Cookbook? Cookbook { get; set; }
+    
+    public string? PhotoUrl { get; set; }
     public Guid? CreatedById { get; set; }
     public virtual User CreatedBy { get; set; }
 }

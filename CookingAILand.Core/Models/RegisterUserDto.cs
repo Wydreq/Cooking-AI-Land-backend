@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace CookingAILand.Models;
 
@@ -10,6 +11,5 @@ public class RegisterUserDto
     [Required] public DateTime DateOfBirth { get; set; }
     [Required] public string Password { get; set; }
     [Required] public string ConfirmPassword { get; set; }
-    
     public int RoleId { get; set; } = 1;
 }

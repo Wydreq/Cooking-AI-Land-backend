@@ -1,5 +1,6 @@
 using CookingAILand.Core.DAL.Entities;
 using CookingAILand.Core.Entities;
+using Microsoft.AspNetCore.Http;
 
 namespace CookingAILand.Core.Models;
 
@@ -13,4 +14,5 @@ public class CreateRecipeDto
     public int PrepTime { get; set; }
     public int CookTime { get; set; }
     public List<Ingridient> Ingridients { get; set; }
+    public IFormFile? Photo { get; set; }
 }

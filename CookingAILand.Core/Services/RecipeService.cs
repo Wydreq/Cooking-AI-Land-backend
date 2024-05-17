@@ -13,11 +13,11 @@ namespace CookingAILand.Core.Services;
 
 public interface IRecipeService
 {
-    Guid Create(Guid cookbookId, CreateRecipeDto dto);
-    void Delete(Guid id);
-    void Update(Guid id, CreateRecipeDto dto);
+    Task<Guid> CreateAsync(Guid cookbookId, CreateRecipeDto dto);
+    Task DeleteAsync(Guid id);
+    Task UpdateAsync(Guid id, CreateRecipeDto dto);
     PagedResult<GetRecipeDto> GetAllPublishedRecipes(CookingQuery query);
-    GetRecipeDto GetRecipeById(Guid id);
+    Task<GetRecipeDto> GetRecipeByIdAsync(Guid id);
 }
 
 public class RecipeService : IRecipeService
@@ -26,18 +26,20 @@ public class RecipeService : IRecipeService
     private readonly IMapper _mapper;
     private readonly IUserContextService _userContextService;
     private readonly IAuthorizationService _authorizationService;
+    private readonly IPhotoUploadService _photoUploadService;
 
-    public RecipeService(CookingDbContext dbContext, IMapper mapper, IUserContextService userContextService, IAuthorizationService authorizationService)
+    public RecipeService(CookingDbContext dbContext, IMapper mapper, IUserContextService userContextService, IAuthorizationService authorizationService, IPhotoUploadService photoUploadService)
     {
         _dbContext = dbContext;
         _mapper = mapper;
         _userContextService = userContextService;
         _authorizationService = authorizationService;
+        _photoUploadService = photoUploadService;
     }
 
-    public Guid Create(Guid cookbookId, CreateRecipeDto dto)
+    public async Task<Guid> CreateAsync(Guid cookbookId, CreateRecipeDto dto)
     {
-        var cookbook = _dbContext.Cookbooks.FirstOrDefault(r => r.Id == cookbookId);
+        var cookbook = await _dbContext.Cookbooks.FirstOrDefaultAsync(r => r.Id == cookbookId);
         
         if (cookbook is null)
             throw new NotFoundException("Cookbook not found");
@@ -49,17 +51,22 @@ public class RecipeService : IRecipeService
             throw new ForbidException("Access denied");
         
         var recipe = _mapper.Map<Recipe>(dto);
+        if (dto.Photo is not null)
+        {
+            var uploadResult = await _photoUploadService.upload(dto.Photo);
+            recipe.PhotoUrl = uploadResult.Url;
+        }
         recipe.CreatedById = (Guid)_userContextService.GetUserId!;
         recipe.CookbookId = cookbookId;
-        _dbContext.Recipes.Add(recipe);
-        _dbContext.SaveChanges();
+        await _dbContext.Recipes.AddAsync(recipe);
+        await _dbContext.SaveChangesAsync();
         return recipe.Id;
     }
     
-    public void Delete(Guid id)
+    public async Task DeleteAsync(Guid id)
     {
         var userId = _userContextService.GetUserId;
-        var recipe = _dbContext.Recipes.FirstOrDefault(r => r.Id == id);
+        var recipe = await _dbContext.Recipes.FirstOrDefaultAsync(r => r.Id == id);
 
         if (recipe is null)
             throw new NotFoundException("Recipe not found");
@@ -68,26 +75,24 @@ public class RecipeService : IRecipeService
             throw new ForbidException("Access denied");
 
         _dbContext.Recipes.Remove(recipe);
-        _dbContext.SaveChanges();
+        await _dbContext.SaveChangesAsync();
     }
     
-    public void Update(Guid id, CreateRecipeDto dto)
+    public async Task UpdateAsync(Guid id, CreateRecipeDto dto)
     {
         var userId = _userContextService.GetUserId;
-        var recipe = _dbContext.Recipes.FirstOrDefault(r => r.Id == id);
+        var recipe = await _dbContext.Recipes.FirstOrDefaultAsync(r => r.Id == id);
 
         if (recipe is null)
             throw new NotFoundException("Cookbook not found");
 
         if (userId != recipe.CreatedById)
             throw new ForbidException("Access denied");
-
         
-
         var updatedRecipe = _mapper.Map(dto, recipe);
 
-        _dbContext.Recipes.Update(updatedRecipe);
-        _dbContext.SaveChanges();
+         _dbContext.Recipes.Update(updatedRecipe);
+        await _dbContext.SaveChangesAsync();
     }
 
     public PagedResult<GetRecipeDto> GetAllPublishedRecipes(CookingQuery query)
@@ -122,10 +127,10 @@ public class RecipeService : IRecipeService
         return new PagedResult<GetRecipeDto>(recipesDto, totalItemsCount, query.PageSize, query.PageNumber);
     }
 
-    public GetRecipeDto GetRecipeById(Guid id)
+    public async Task<GetRecipeDto> GetRecipeByIdAsync(Guid id)
     {
-        var recipe = _dbContext.Recipes.FirstOrDefault(r => r.Id == id);
-        var cookbook = _dbContext.Cookbooks.FirstOrDefault(c => c.Id == recipe.CookbookId);
+        var recipe = await _dbContext.Recipes.FirstOrDefaultAsync(r => r.Id == id);
+        var cookbook = await _dbContext.Cookbooks.FirstOrDefaultAsync(c => c.Id == recipe.CookbookId);
         
         if(recipe is null) 
             throw new NotFoundException("Cookbook not found");
